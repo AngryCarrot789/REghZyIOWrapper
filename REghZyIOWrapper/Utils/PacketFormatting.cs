@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace REghZyIOWrapper.Packeting.Packets {
-    public static class StringFormatter {
+namespace REghZyIOWrapper.Utils {
+    public static class PacketFormatting {
         /// <summary>
         /// Stretches the given string by placing the given character infront
         /// </summary>

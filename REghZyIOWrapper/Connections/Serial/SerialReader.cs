@@ -30,10 +30,10 @@ namespace REghZyIOWrapper.Connections.Serial {
 
         public SerialReader(SerialPort port, Action<string> lineReceivedCallback) {
             if (port == null) {
-                throw new NullReferenceException("Port cannot be null");
+                throw new ArgumentNullException(nameof(port), "Port cannot be null");
             }
             if (lineReceivedCallback == null) {
-                throw new NullReferenceException("Callback cannot be null");
+                throw new ArgumentNullException(nameof(lineReceivedCallback), "Callback cannot be null");
             }
 
             this._creationThreadDispatcher = Dispatcher.CurrentDispatcher;
@@ -49,12 +49,12 @@ namespace REghZyIOWrapper.Connections.Serial {
             this.Thread.Start();
         }
 
-        public SerialReader(SerialPort port) {
-            if (port == null) {
-                throw new NullReferenceException("Port cannot be null");
+        public SerialReader(SerialPort serialPort) {
+            if (serialPort == null) {
+                throw new ArgumentNullException(nameof(serialPort), "Serial Port cannot be null");
             }
 
-            this.Port = port;
+            this.Port = serialPort;
             this._canRun = false;
             this.Thread = new Thread(this.ReaderMain) {
                 Name = "Serial Port Reader " + (THREAD_COUNT++),
@@ -117,8 +117,11 @@ namespace REghZyIOWrapper.Connections.Serial {
                                         continue;
                                     }
                                     if (c == '\n') {
-                                        OnLine(buffer.ToString());
-                                        buffer.Clear();
+                                        if (buffer.Length > 0) {
+                                            OnLine(buffer.ToString());
+                                            buffer.Clear();
+                                        }
+
                                         continue;
                                     }
 

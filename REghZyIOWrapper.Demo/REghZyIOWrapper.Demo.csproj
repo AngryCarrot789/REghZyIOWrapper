@@ -50,6 +50,10 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\REghZyIOWrapper.Arduino\REghZyIOWrapper.Arduino.csproj">
+      <Project>{e63f50a0-6bd0-4c70-a76d-5bd8e743f42a}</Project>
+      <Name>REghZyIOWrapper.Arduino</Name>
+    </ProjectReference>
     <ProjectReference Include="..\REghZyIOWrapper\REghZyIOWrapper.csproj">
       <Project>{bb02523e-37ba-4eb3-93ba-44092b8968e7}</Project>
       <Name>REghZyIOWrapper</Name>

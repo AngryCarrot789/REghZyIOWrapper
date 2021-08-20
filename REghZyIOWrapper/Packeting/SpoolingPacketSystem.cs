@@ -72,8 +72,9 @@ namespace REghZyIOWrapper.Packeting {
             while (true) {
                 if (this._canRunSpooler) {
                     WriteNextPacket();
-                    Thread.Sleep(1);
                 }
+
+                Thread.Sleep(1);
             }
         }
     }

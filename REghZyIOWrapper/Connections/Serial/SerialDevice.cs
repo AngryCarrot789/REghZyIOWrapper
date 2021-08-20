@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.IO;
 using System.IO.Ports;
-using System.Windows.Threading;
 
 namespace REghZyIOWrapper.Connections.Serial {
     /// <summary>
@@ -14,10 +12,12 @@ namespace REghZyIOWrapper.Connections.Serial {
         /// </summary>
         public SerialPort Port { get; }
 
+        public string PortName { get => this.Port.PortName; }
+
         /// <summary>
         /// The thread-based reader, that constantly reads the serial port's input buffer
         /// </summary>
-        private SerialReader _reader;
+        private readonly SerialReader _reader;
 
         /// <summary>
         /// The serial port output stream
@@ -37,14 +37,37 @@ namespace REghZyIOWrapper.Connections.Serial {
         /// <param name="baudRate">The baud rate to operate the serial device at</param>
         public SerialDevice(Action<string> onLineReceived, string port, int baudRate = 9600) {
             if (onLineReceived == null) {
-                throw new NullReferenceException("Line received callback cannot be null");
+                throw new ArgumentNullException(nameof(onLineReceived), "Line received callback cannot be null");
             }
             if (port == null) {
-                throw new NullReferenceException("Port cannot be null");
+                throw new ArgumentNullException(nameof(port), "Port cannot be null");
             }
 
             this.Port = new SerialPort(port, baudRate, Parity.None, 8, StopBits.One);
             this._reader = new SerialReader(this.Port, onLineReceived);
+        }
+
+        /// <summary>
+        /// Creates a new instance of a <see cref="SerialDevice"/>
+        /// </summary>
+        /// <param name="onLineReceived">Called when the <see cref="SerialReader"/> received a line of text</param>
+        /// <param name="serialPort">The serial port object to use</param>
+        public SerialDevice(Action<string> onLineReceived, SerialPort serialPort) {
+            if (onLineReceived == null) {
+                throw new ArgumentNullException(nameof(onLineReceived), "Line received callback cannot be null");
+            }
+            if (serialPort == null) {
+                throw new ArgumentNullException(nameof(serialPort), "Serial Port cannot be null");
+            }
+
+            this.Port = serialPort;
+            this._reader = new SerialReader(this.Port, onLineReceived);
+            if (this.Port.IsOpen) {
+                this.Output = new StreamWriter(this.Port.BaseStream);
+                this.Output.AutoFlush = false;
+                this.Input = new StreamReader(this.Port.BaseStream);
+                this._reader.Enable();
+            }
         }
 
         /// <summary>

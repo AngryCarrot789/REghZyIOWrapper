@@ -36,8 +36,10 @@ namespace REghZyIOWrapper.Listeners {
         /// This is <see langword="false"/> by default
         /// </para>
         /// </summary>
-        public bool CancelOnReceive { get => this._cancelOnReceive; }
-
+        public bool CancelOnReceive {
+            get => this._cancelOnReceive;
+        }
+         
         public FilteredPacketListener(PacketFilter filter, Action<Packet> onPacketReceived, bool cancelOnReceive = false) {
             if (filter == null) {
                 throw new NullReferenceException("Filter cannot be null");

@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Runtime.CompilerServices;
 using REghZyIOWrapper.Exceptions;
+using REghZyIOWrapper.Utils;
 
 namespace REghZyIOWrapper.Packeting.Packets {
     /// <summary>
@@ -14,13 +14,13 @@ namespace REghZyIOWrapper.Packeting.Packets {
     /// To write data, see <see cref="Write"/>
     /// </para>
     /// <para>
-    /// Reading data is done automatically (see <see cref="RegisterCreator{T}"/> to register a creator)
+    /// Reading data is done automatically (see <see cref="RegisterPacket{T}"/> to register a creator)
     /// </para>
     /// </summary>
     public abstract class Packet {
-        public const int TOTAL_PACKETS_POSSIBLE = 20;
+        public const int TOTAL_PACKETS_POSSIBLE = 100;
         public const int PACKET_ID_MIN = 0;
-        public const int PACKET_ID_MAX = 19;
+        public const int PACKET_ID_MAX = 99;
         public const int PACKET_ID_LENGTH = 2;
         public const int PACKET_META_MIN = 0;
         public const int PACKET_META_MAX = 99;
@@ -32,39 +32,16 @@ namespace REghZyIOWrapper.Packeting.Packets {
         /// <para>Index is the packet ID</para>
         /// </summary>
         private static readonly Func<int, string, Packet>[] PacketCreators;
+
+        /// <summary>
+        /// A dictionary that maps the ID of a packet to the type of packet (e.g 0 = typeof(Packet0HardwareInfo))
+        /// </summary>
         private static readonly Dictionary<int, Type> PacketIdToType;
+
+        /// <summary>
+        /// A dictionary that maps the type of packet to its ID (eg typeof(Packet0HardwareInfo) = 0)
+        /// </summary>
         private static readonly Dictionary<Type, int> PacketTypeToId;
-
-        static Packet() {
-            PacketCreators = new Func<int, string, Packet>[TOTAL_PACKETS_POSSIBLE];
-            PacketIdToType = new Dictionary<int, Type>();
-            PacketTypeToId = new Dictionary<Type, int>();
-
-            // RegisterCreator(0, (meta, data) => new Packet0Text(meta, data));
-            // doesn't need to be registered because it's not a receivable packet, only sendable
-            // software tells hardware to digitalWrite, not the other way around ;)
-            // RegisterCreator(1, (meta, data) => new Packet1DigitalWrite(meta, data == "t"));
-        }
-
-        /// <summary>
-        /// Forces all packet classes to be loaded
-        /// </summary>
-        public static void InitAssembly() {
-            RunPacketCtor(typeof(Packet0HardwareInfo));
-            RunPacketCtor(typeof(Packet1Text));
-        }
-
-        private static void RunPacketCtor(Type type) {
-            RuntimeHelpers.RunClassConstructor(type.TypeHandle);
-        }
-
-        /// <summary>
-        /// The ID of this packet
-        /// <para>
-        /// Must NOT be below 0, or above 99 (100 possibly IDs)
-        /// </para>
-        /// </summary>
-        // public abstract int ID { get; }
 
         /// <summary>
         /// Extra data for this packet (that is sent after the ID)
@@ -82,6 +59,22 @@ namespace REghZyIOWrapper.Packeting.Packets {
             this.MetaData = metaData;
         }
 
+        static Packet() {
+            PacketCreators = new Func<int, string, Packet>[TOTAL_PACKETS_POSSIBLE];
+            PacketIdToType = new Dictionary<int, Type>();
+            PacketTypeToId = new Dictionary<Type, int>();
+        }
+
+        /// <summary>
+        /// Runs a packet's static constructor. Useful if you register your packet creator in there.
+        /// This method should usually be run before you start using packets, or packet systems 
+        /// (e.g during app startup), otherwise the creators wont be registered :-)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public static void RunPacketCtor<T>() {
+            RuntimeHelpers.RunClassConstructor(typeof(T).TypeHandle);
+        }
+
         /// <summary>
         /// Writes the custom data in this packet to the given <see cref="TextWriter"/> (ID and Meta are written automatically, so this is optional)
         /// <para>
@@ -92,23 +85,32 @@ namespace REghZyIOWrapper.Packeting.Packets {
         public abstract void Write(TextWriter writer);
 
         /// <summary>
-        /// Registers a packet creator for a specific packet ID, with the given creator.
+        /// Registers a packet type with the given ID (and optionally a creator for it).
         /// Usually, you register creators in a packet class' static constructor
         /// </summary>
-        /// <param name="id">The packet ID that the creator creates</param>
-        /// <param name="creator">The function that creates the packet</param>
-        /// <typeparam name="T">The type of packet to create</typeparam>
-        public static void RegisterCreator<T>(int id, Func<int, string, T> creator) where T : Packet {
+        /// <param name="id">The packet ID is being registered</param>
+        /// <param name="creator">The function that creates the packet, or null if one isn't needed</param>
+        /// <typeparam name="T">The type of packet that is being registerd</typeparam>
+        public static void RegisterPacket<T>(int id, Func<int, string, T> creator) where T : Packet {
+            if (id < PACKET_ID_MIN || id > PACKET_ID_MAX) {
+                throw new InvalidDataException($"Packet ID was not between {PACKET_META_MIN} and {PACKET_META_MAX}! It was {id}");
+            }
+
             Type type = typeof(T);
-            if (type.IsAbstract) {
-                throw new Exception("Packet type cannot be abstract");
+            if (type == typeof(Packet)) {
+                throw new Exception("Packet type cannot be the abstract Packet type");
+            }
+            
+            // should only really need to check the first or second one (not third, considering it can be null)
+            // but eh :)
+            if (PacketIdToType.ContainsKey(id) || PacketTypeToId.ContainsKey(type) || PacketCreators[id] != null) {
+                throw new Exception($"The packet (ID {id}) has already been registered");
             }
 
-            if (PacketCreators[id] != null) {
-                throw new Exception($"A packet creator (for the ID {id}) has already been registered");
+            if (creator != null) {
+                PacketCreators[id] = creator;
             }
 
-            PacketCreators[id] = creator;
             PacketIdToType[id] = type;
             PacketTypeToId[type] = id;
         }
@@ -145,10 +147,10 @@ namespace REghZyIOWrapper.Packeting.Packets {
         /// <exception cref="NullReferenceException">If the given packet data is null</exception>
         /// <exception cref="InvalidDataException">If the packet header data was corrupted (id or meta)</exception>
         /// <exception cref="MissingPacketCreatorException">If the packet creator for the specific Id was missing (aka null)</exception>
-        /// <exception cref="PacketCreationException">Thrown if the packet couldn't be created (unknown metadata or corrupted packet data maybe)</exception>
+        /// <exception cref="PacketCreationException">Thrown if the packet creator generated an exception (unknown metadata or corrupted packet data maybe)</exception>
         public static Packet CreatePacket(string packetData) {
             if (packetData == null) {
-                throw new NullReferenceException("The data cannot be null!");
+                throw new ArgumentNullException(nameof(packetData));
             }
             if (packetData.Length < PACKET_HEADER_LENGTH) {
                 throw new InvalidDataException($"The data wasn't long enough, It must be {PACKET_HEADER_LENGTH} or above (it was {packetData.Length})");
@@ -163,7 +165,12 @@ namespace REghZyIOWrapper.Packeting.Packets {
                         throw new MissingPacketCreatorException(id);
                     }
 
-                    return creator(meta, packetData.Substring(PACKET_HEADER_LENGTH));
+                    try {
+                        return creator(meta, packetData.Substring(PACKET_HEADER_LENGTH));
+                    }
+                    catch(Exception e) {
+                        throw new PacketCreationException($"Exception while executing packet creator for ID {id} and meta {meta}", packetData, e);
+                    }
                 }
 
                 throw new InvalidDataException($"The value ({stringMeta}) was not parsable as the packet's MetaData");
@@ -179,8 +186,13 @@ namespace REghZyIOWrapper.Packeting.Packets {
         /// <param name="packet">The packet that is to be written</param>
         /// <exception cref="InvalidDataException">If the packet's ID or Meta was invalid (below 0 or above 99)</exception>
         public static void WritePacket(TextWriter writer, Packet packet) {
+            if (packet == null) {
+                throw new ArgumentNullException(nameof(packet));
+            }
+
             int id = GetPacketID(packet);
             if (id < PACKET_ID_MIN || id > PACKET_ID_MAX) {
+                // no need to check the ID because the ID wouldn't've been registered anyway if it was out of range... but eh
                 throw new InvalidDataException($"ID was not between {PACKET_META_MIN} and {PACKET_META_MAX}! It was {id}");
             }
 
@@ -189,8 +201,8 @@ namespace REghZyIOWrapper.Packeting.Packets {
                 throw new InvalidDataException($"Meta was not between {PACKET_META_MIN} and {PACKET_META_MAX}! It was {meta}");
             }
 
-            writer.Write(StringFormatter.StretchFront(id.ToString(), PACKET_ID_LENGTH, '0'));
-            writer.Write(StringFormatter.StretchFront(meta.ToString(), PACKET_META_LENGTH, '0'));
+            writer.Write(PacketFormatting.StretchFront(id.ToString(), PACKET_ID_LENGTH, '0'));
+            writer.Write(PacketFormatting.StretchFront(meta.ToString(), PACKET_META_LENGTH, '0'));
             packet.Write(writer);
         }
     }
