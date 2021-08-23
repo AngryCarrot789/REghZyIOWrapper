@@ -19,6 +19,17 @@ void sendMessage(StringBuilder& msg);
 void setup() {
 	buffer = new CharBuffer(128);
 	Serial.begin(9600);
+	pinMode(3, HIGH);
+	pinMode(4, HIGH);
+	pinMode(5, HIGH);
+	pinMode(6, HIGH);
+	pinMode(7, HIGH);
+	pinMode(8, HIGH);
+	pinMode(9, HIGH);
+	pinMode(10, HIGH);
+	pinMode(11, HIGH);
+	pinMode(12, HIGH);
+	pinMode(13, HIGH);
 }
 
 void loop() {

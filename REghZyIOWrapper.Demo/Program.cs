@@ -3,8 +3,6 @@ using System.IO.Ports;
 using REghZyIOWrapper.Arduino;
 using REghZyIOWrapper.Arduino.Packets;
 using REghZyIOWrapper.Listeners;
-using REghZyIOWrapper.Packeting;
-using REghZyIOWrapper.Packeting.Packets;
 using REghZyIOWrapper.Utils;
 
 namespace REghZyIOWrapper.Demo {
@@ -19,38 +17,53 @@ namespace REghZyIOWrapper.Demo {
                 Console.WriteLine($"Connected to {port}");
                 Console.WriteLine($"Hardware name: {device.GetHardwareNameAsync().Result}");
                 while (true) {
-                    try {
-                        string text = Console.ReadLine();
-                        if (text == null || text.Length < 2) {
-                            Console.WriteLine("Too short!");
-                            continue;
-                        }
-
-                        int pin = text.Between("(", ")", 2).ParseInt();
-                        if (pin < 3 || pin > 13) {
-                            Console.WriteLine("Pin too low or high! Mst be between 3 and 13");
-                            continue;
-                        }
-
-                        if (text.Substring(0, 2) == "dh") {
-                            device.DigitalWrite(pin, true);
-                        }
-                        else if (text.Substring(0, 2) == "dl") {
-                            device.DigitalWrite(pin, false);
-                        }
-                        else {
-                            Console.WriteLine($"wut??? '{text.Substring(0, 2)}'. needs to be 'dh(pin)' for digital write high, or 'dl(pin)' for digital write low");
-                        }
+                    string text = Console.ReadLine();
+                    if (text == null || text.Length < 1) {
+                        Console.WriteLine("Too short!");
+                        continue;
                     }
-                    // literally effort cant be botherd to try parse integer XD
-                    catch(Exception e) {
-                        Console.WriteLine("Error: " + e.Message);
+
+                    int pin = -1;
+                    string i = text.Between("(", ",");
+                    if (i == null) {
+                        pin = -1;
+                    }
+
+                    if (int.TryParse(i, out int integer)) {
+                        pin = integer;
+                    }
+
+                    bool? state = null;
+                    string st = text.Between(",", ")");
+                    if (st == null) {
+                        state = null;
+                    }
+                    else if (st.Trim().ToLower() == "high") {
+                        state = true;
+                    }
+                    else if (st.Trim().ToLower() == "low") {
+                        state = false;
+                    }
+
+                    if (pin < 3 || pin > 13) {
+                        Console.WriteLine("Invalid pin! Must be between 3 and 13");
+                        continue;
+                    }
+
+                    if (state == null) {
+                        Console.WriteLine("State isn't valid!");
+                        continue;
+                    }
+
+                    if (text.StartsWith("digitalWrite")) {
+                        device.DigitalWrite(pin, state == true);
                     }
                 }
             }
             catch(Exception e) {
                 Console.WriteLine($"Failed to connect to {port}: {e.Message}");
                 Console.WriteLine(e.StackTrace);
+                Console.ReadLine();
             }
         }
     }
