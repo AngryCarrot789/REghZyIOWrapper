@@ -13,13 +13,25 @@ public:
 	}
 
 	static int intlen(const char* str, int startIndex) {
-		int count = 0;
+		int len = 0;
 		char c = str[startIndex++];
 		while (c >= '0' && c <= '9') {
-			count++;
+			len++;
 			c = str[startIndex++];
 		}
-		return count;
+
+		return (len < 1) ? 1 : len;
+	}
+
+	static int intlen(int value) {
+		int len = 0;
+		int temp = 1;
+		while (temp <= value) {
+			len++;
+			temp *= 10;
+		}
+
+		return (len < 1) ? 1 : len;
 	}
 
 	static int stoi(const char* str, int len, int startIndex) {
@@ -31,14 +43,20 @@ public:
 	}
 
 	static int itostr(int value, char* str, int startIndex) {
-		int i = ((int)log10((double)value)) + startIndex;
+		int i = (intlen(value) - 1) + startIndex;
 		int len = 0;
-		while (value > 0) {
-			str[i--] = ((value % 10) + '0');
-			value = value / 10;
-			len++;
+		if (value == 0) {
+			str[i] = '0';
 		}
-		return len;
+		else {
+			while (value > 0) {
+				str[i--] = ((value % 10) + '0');
+				value = value / 10;
+				len++;
+			}
+		}
+
+		return (len < 1) ? 1 : len;
 	}
 
 	static void charset(char* buf, int value, int len) {
@@ -105,6 +123,16 @@ public:
 	}
 
 	// Appends a string (with the given size) to this StringBuilder
+	StringBuilder& appendString(const StringBuilder& sb) {
+		ensureBufferSize(sb.mNextIndex);
+		for (int i = 0; i < sb.mNextIndex; i++) {
+			mBuffer[mNextIndex++] = sb.mBuffer[i];
+		}
+
+		return ref();
+	}
+
+	// Appends a string (with the given size) to this StringBuilder
 	StringBuilder& appendString(const char* str, int len) {
 		ensureBufferSize(len);
 		for (int i = 0; i < len; i++) {
@@ -125,10 +153,15 @@ public:
 
 	// Appends an integer
 	StringBuilder& appendInt(int value) {
-		char c[10];
-		charset(c, 0, 10);
-		int intLen = itostr(value, c, 0);
-		return appendString(c, intLen);
+		if (value == 0) {
+			return appendString("0");
+		}
+		else {
+			char c[10];
+			charset(c, 0, 10);
+			int intLen = itostr(value, c, 0);
+			return appendString(c, intLen);
+		}
 	}
 
 	StringBuilder& appendLine() {
@@ -162,18 +195,18 @@ public:
 
 	// Returns the number of characters that have been appended to this StringBuilder
 	int getSize() {
-		return this->mNextIndex;
+		return mNextIndex;
 	}
 
 	// Returns the capacity of the internal buffer (not including the null-termination char)
 	int getCapacity() {
-		return this->mCapacity;
+		return mCapacity;
 	}
 
 	// Returns the pointer to the internal null-terminated char buffer (aka c_str)
 	char* toString() {
 		setNonCharToNull();
-		return this->mBuffer;
+		return mBuffer;
 	}
 
 	// Returns a reference to this StringBuilder
@@ -210,6 +243,34 @@ public:
 	inline StringBuilder& operator+=(const char value) { return appendChar(value); }
 	inline StringBuilder& operator<<(const char value) { return appendChar(value); }
 
+	inline StringBuilder operator=(const char* value) {
+		return StringBuilder(value);
+	}
+
+	StringBuilder operator=(const char value) {
+		StringBuilder sb = StringBuilder(1);
+		return sb.appendChar(value);
+	}
+
+	StringBuilder operator=(const int value) {
+		char c[10];
+		int len = itostr(value, c, 0);
+		return StringBuilder(c, len, len);
+	}
+
+	// Clears the buffer and sets the write index to 0
+	StringBuilder& clear() {
+		for (int i = 0; i < mNextIndex; i++) {
+			mBuffer[i] = 0;
+		}
+		mNextIndex = 0;
+	}
+
+	// Does not clear the actual buffer, simply resets the write index to 0
+	StringBuilder& fastClear() {
+		mNextIndex = 0;
+	}
+
 	// Ensures the internal buffer can fit the given number of extra characters (extraSize)
 	// Returns true if the buffer didn't require a resize, or if it was successfully resized
 	// Returns false if the buffer failed to resize (possibly due to memory fragmentation)
@@ -230,11 +291,15 @@ public:
 		return false;
 	}
 
+	void deleteBuffer() {
+		delete[](mBuffer);
+	}
+
 private:
 	// Sets the last character in this StringBuilder as 0 (aka a null character, allowing strlen to be used)
 	void setLastAsNull() {
 		setNonCharToNull();
-		this->mBuffer[this->mCapacity] = 0;
+		mBuffer[mCapacity] = 0;
 	}
 
 	// Resizes the internal buffer to the given size, optionally copying the old buffer into the new one

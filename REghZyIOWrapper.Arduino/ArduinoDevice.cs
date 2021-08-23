@@ -22,6 +22,7 @@ namespace REghZyIOWrapper.Arduino {
             Packet.RunPacketCtor<Packet1DigitalWrite>();
             Packet.RunPacketCtor<Packet2PWMWrite>();
             Packet.RunPacketCtor<Packet3AnalogueRead>();
+            Packet.RunPacketCtor<Packet8Chat>();
         }
 
         /// <summary>

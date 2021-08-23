@@ -1,15 +1,20 @@
-#include "DString.h"
 #include "CharBuffer.h"
+#include "StringBuilder.h"
 
 CharBuffer* buffer;
 
+StringBuilder errBuffer = StringBuilder(256);
+
 void processNewLine();
-void sendPacketFailed(DString& str);
+void sendPacketFailed();
 
 void processPacket00(int meta);
 void processPacket01(int meta);
 void processPacket02(int meta);
 void processPacket03(int meta);
+
+void sendPacket(int id, int meta, StringBuilder& dataAutoDeleted);
+void sendMessage(StringBuilder& msg);
 
 void setup() {
 	buffer = new CharBuffer(128);
@@ -33,21 +38,25 @@ void loop() {
 }
 
 void processNewLine() {
+	errBuffer.clear();
 	int readable = buffer->readable();
 	if (readable < 4) {
-		sendPacketFailed(DString("Stuff").ref());
+		errBuffer.appendString("Readable chars < 4");
+		sendPacketFailed();
 		return;
 	}
 
 	int id = buffer->readint(2);
 	if (id < 0 || id > 99) {
-		sendPacketFailed(DString("ID Out of range (").append(id).append(")"));
+		errBuffer.appendString("ID Out of Range (it was ").appendInt(id).appendChar(')');
+		sendPacketFailed();
 		return;
 	}
 
 	int meta = buffer->readint(2);
 	if (meta < 0 || meta > 99) {
-		sendPacketFailed(DString("Meta Out of range (").append(meta).append(")"));
+		errBuffer.appendString("Meta Out of Range (it was ").appendInt(id).appendChar(')');
+		sendPacketFailed();
 		return;
 	}
 
@@ -71,49 +80,85 @@ void processPacket00(int meta) {
 		if (c == '.') {
 			int code = buffer->readint(1);
 			if (code == 1) {
-				DString str = "0000";
-				str.append("3.");
+				StringBuilder str = "0000";
+				str.appendString("3.");
 				if (reqId > 9) {
-					str.append(reqId);
+					str.appendInt(reqId);
 				}
 				else {
-					str.append("0");
-					str.append(reqId);
+					str.appendString("0");
+					str.appendInt(reqId);
 				}
 
-				str.append(".");
-				str.append(code);
-				str.append(".Arduino/Atmega328p - REghZy Software V0-1-246");
+				str.appendString(".");
+				str.appendInt(code);
+				str.appendString(".Arduino/Atmega328p - REghZy Software V0-1-246");
 				Serial.println(str.toString());
 				str.deleteBuffer();
 			}
 			else {
-				sendPacketFailed(DString("Code != 1").ref());
+				errBuffer.appendString("Code != 1");
+				sendPacketFailed();
 			}
 		}
 		else {
-			sendPacketFailed(DString("DOT 2 Missing").ref());
+			errBuffer.appendString("2nd dot = bad");
+			sendPacketFailed();
 		}
 	}
 	else {
-		sendPacketFailed(DString("DOT 1 Missing").ref());
+		errBuffer.appendString("1st dot = bad");
+		sendPacketFailed();
 	}
 }
 
-void processPacket01(int meta) { }
+void processPacket01(int meta) {
+	char c = buffer->readChar();
+	if (c == 'H') {
+		digitalWrite(meta, HIGH);
+		sendMessage(StringBuilder(20).appendString("Pin ").appendInt(meta).appendString(" set to HIGH"));
+	}
+	else if (c == 'L') {
+		digitalWrite(meta, LOW);
+		sendMessage(StringBuilder(20).appendString("Pin ").appendInt(meta).appendString(" set to LOW"));
+	}
+	else {
+		errBuffer.appendString("The char '").appendChar(c).appendString("' was unknown! Pin = ").appendInt(meta);
+		sendPacketFailed();
+	}
+}
+
 void processPacket02(int meta) { }
 void processPacket03(int meta) { }
 
 // Autodeletes the given string buffer for you
-void sendPacketFailed(DString& str) {
+void sendPacketFailed() {
 	Serial.println();
 	Serial.print("0900");
-	Serial.print(str.toString());
-	str.deleteBuffer();
-	Serial.println(" || ");
-	//Serial.println(((const char*)buffer->c_str()));
-	//str = " || Index = ";
-	//str.append(buffer->getReadIndex());
-	//Serial.println(str.toString());
-	//str.deleteBuffer();
+	Serial.println(errBuffer.appendString(". Index = ").appendInt(buffer->getReadIndex()).toString());
+	errBuffer.clear();
+}
+
+void sendPacket(int id, int meta, StringBuilder& dataAutoDeleted) {
+	StringBuilder sb = StringBuilder(dataAutoDeleted.getSize() + 4);
+	if (id > 9) {
+		sb.appendInt(id);
+	}
+	else {
+		sb.appendString("0").appendInt(id);
+	}
+	if (meta > 9) {
+		sb.appendInt(meta);
+	}
+	else {
+		sb.appendString("0").appendInt(meta);
+	}
+
+	sb.appendString(dataAutoDeleted);
+	Serial.println(sb.toString());
+	dataAutoDeleted.deleteBuffer();
+}
+
+void sendMessage(StringBuilder& msg) {
+	sendPacket(8, 0, msg);
 }

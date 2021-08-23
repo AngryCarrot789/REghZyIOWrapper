@@ -46,6 +46,7 @@
     <Compile Include="Packets\Packet2PWMWrite.cs" />
     <Compile Include="Packets\Packet1DigitalWrite.cs" />
     <Compile Include="Packets\Packet3AnalogueRead.cs" />
+    <Compile Include="Packets\Packet8Chat.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
