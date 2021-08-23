@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.IO.Ports;
 using REghZyIOWrapper.Connections;
 using REghZyIOWrapper.Connections.Serial;
@@ -7,9 +8,9 @@ using REghZyIOWrapper.Packeting.Packets;
 
 namespace REghZyIOWrapper.Packeting {
     /// <summary>
-    /// An implementation of the <see cref="PacketSystem"/> (and <see cref="SpoolingPacketSystem"/>) that uses a <see cref="SerialDevice"/> to send and receive packets
+    /// An implementation of the <see cref="PacketSystem"/> that uses a <see cref="SerialDevice"/> to send and receive packets
     /// </summary>
-    public class SerialPacketSystem : SpoolingPacketSystem, IConnection {
+    public class SerialPacketSystem : PacketSystem, IConnection {
         /// <summary>
         /// The serial device used for reading and writing data
         /// </summary>
@@ -53,16 +54,17 @@ namespace REghZyIOWrapper.Packeting {
                 packet = Packet.CreatePacket(line);
             }
             catch(PacketCreationException e) {
-                Console.WriteLine($"Failed to create packet: {(e.Message == null ? "(NO MESSAGE)" : e.Message)}");
-                Console.WriteLine($"Raw packet data: {(e.PacketData == null ? "(PACKET DATA WAS NULL)" : e.PacketData)}");
+                Console.WriteLine("------------------------------------------------------------");
+                Console.WriteLine($"Failed to create packet: {e.Message ?? "(NO MESSAGE)"}");
+                Console.WriteLine($"Raw packet data: {e.PacketData ?? "(PACKET DATA WAS NULL)"}");
                 string stacktraceA = e.StackTrace;
-                Console.WriteLine($"Stacktrace:\n{(stacktraceA == null ? "(UNAVAILABLE)" : stacktraceA)}");
+                Console.WriteLine($"Stacktrace:\n{stacktraceA ?? "(UNAVAILABLE)"}");
                 int count = 0;
                 Exception inner = e.InnerException;
                 while (inner != null && count < 20) {
-                    Console.WriteLine($"Inner Exception: {(e.InnerException.Message == null ? "(NO MESSAGE)" : e.InnerException.Message)}");
+                    Console.WriteLine($"Inner Exception: {e.InnerException.Message ?? "(NO MESSAGE)"}");
                     string stacktraceB = e.InnerException.StackTrace;
-                    Console.WriteLine($"Stacktrace:\n{(stacktraceB == null ? "(UNAVAILABLE)" : stacktraceB)}");
+                    Console.WriteLine($"Stacktrace:\n{stacktraceB ?? "(UNAVAILABLE)"}");
                     inner = inner.InnerException;
                     count++;
                 }
@@ -71,11 +73,23 @@ namespace REghZyIOWrapper.Packeting {
                     Console.WriteLine("WARNING: INNER EXCEPTION LOOP!");
                 }
 
+                Console.WriteLine("------------------------------------------------------------");
+                return;
+            }
+            catch (InvalidDataException e) {
+                Console.WriteLine("------------------------------------------------------------");
+                Console.WriteLine($"Failed to create a packet due to a corrupt packet header: {e.Message ?? "(UNAVAILABLE)"}");
+                Console.WriteLine("Data: " + line);
+                Console.WriteLine(e.StackTrace);
+                Console.WriteLine("------------------------------------------------------------");
                 return;
             }
             catch (Exception e) {
-                Console.WriteLine($"Unhandled exception trying to create a packet: {e.Message}");
+                Console.WriteLine("------------------------------------------------------------");
+                Console.WriteLine($"Unhandled exception trying to create a packet: {e.Message ?? "(UNAVAILABLE)"}");
+                Console.WriteLine("Data: " + line);
                 Console.WriteLine(e.StackTrace);
+                Console.WriteLine("------------------------------------------------------------");
                 return;
             }
 

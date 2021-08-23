@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using REghZyIOWrapper.Listeners;
 using REghZyIOWrapper.Packeting.Packets;
@@ -9,14 +10,7 @@ namespace REghZyIOWrapper.Packeting {
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public abstract class ACKPacketHelper<T> where T : PacketACK {
-        private T _lastReceivedPacket;
-
-        /// <summary>
-        /// The latest packet that was received
-        /// </summary>
-        public T LastReceivedPacket {
-            get => this._lastReceivedPacket;
-        }
+        private readonly Dictionary<int, T> LastReceivedPackets = new Dictionary<int, T>();
 
         private readonly PacketSystem _packetSystem;
         public PacketSystem PacketSystem {
@@ -39,7 +33,7 @@ namespace REghZyIOWrapper.Packeting {
             }
             // contains actual info
             else if (packet.Destination == DestinationCode.ToServer) {
-                this._lastReceivedPacket = packet;
+                this.LastReceivedPackets[packet.RequestID] = packet;
                 OnProcessPacketToServer(packet);
             }
             // bug???
@@ -54,12 +48,14 @@ namespace REghZyIOWrapper.Packeting {
         /// This will wait forever until the packet has arrived
         /// </para>
         /// </summary>
-        public async Task<T> ReceivePacketAsync() {
-            while(this._lastReceivedPacket == null) {
-                await Task.Delay(1).ConfigureAwait(true);
-            }
+        public async Task<T> ReceivePacketAsync(int id) {
+            while(true) {
+                if (this.LastReceivedPackets.TryGetValue(id, out T packet) && packet != null) {
+                    return packet;
+                }
 
-            return this._lastReceivedPacket;
+                await Task.Delay(1);
+            }
         }
 
         public void SendPacket(T packet) {

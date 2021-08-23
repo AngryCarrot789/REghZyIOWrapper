@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using REghZyIOWrapper.Arduino.Packets;
 using REghZyIOWrapper.Connections;
 using REghZyIOWrapper.Connections.Serial;
-using REghZyIOWrapper.Listeners;
 using REghZyIOWrapper.Packeting;
 using REghZyIOWrapper.Packeting.Packets;
 
@@ -11,11 +10,11 @@ namespace REghZyIOWrapper.Arduino {
     public class ArduinoDevice : IConnection {
         public SerialPacketSystem PacketSystem { get; }
         public SerialDevice Device { get => this.PacketSystem.Device; }
-        public HardwareInfoHelper HardwareHelper { get; }
+        public HardwareNamePacketHelper HardwareNameHelper { get; }
 
         public ArduinoDevice(string port) {
             this.PacketSystem = new SerialPacketSystem(port);
-            this.HardwareHelper = new HardwareInfoHelper(this.PacketSystem, this.GetHardwareInfo);
+            this.HardwareNameHelper = new HardwareNamePacketHelper(this.PacketSystem, this.GetHardwareInfo);
         }
 
         static ArduinoDevice() {
@@ -31,32 +30,29 @@ namespace REghZyIOWrapper.Arduino {
         /// <param name="pin"></param>
         /// <param name="state"></param>
         public void DigitalWrite(int pin, bool state) {
-            this.PacketSystem.QueuePacket(new Packet1DigitalWrite(pin, state));
+            this.PacketSystem.SendPacket(new Packet1DigitalWrite(pin, state));
         }
 
         public void PWMWrite(int pin, int pwmValue) {
-            this.PacketSystem.QueuePacket(new Packet2PWMWrite(pin, pwmValue));
+            this.PacketSystem.SendPacket(new Packet2PWMWrite(pin, pwmValue));
         }
 
         public async Task<string> GetHardwareNameAsync() {
             return await Task.Run(async () => {
-                this.HardwareHelper.RequestInfo(Packet0HardwareInfo.HardwareInfos.HardwareName);
-                return this.HardwareHelper.ReceivePacketAsync().Result.Information;
+                int id = this.HardwareNameHelper.Request(Packet0HardwareInfo.HardwareInfos.HardwareName);
+                Packet0HardwareInfo packet = await this.HardwareNameHelper.ReceivePacketAsync(id);
+                return packet.Information;
             });
         }
 
         public void Connect() {
-            this.PacketSystem.Enable();
+            // this.PacketSystem.Enable();
             this.PacketSystem.Connect();
         }
 
         public void Disconnect() {
-            this.PacketSystem.Disable();
+            // this.PacketSystem.Disable();
             this.PacketSystem.Disconnect();
-        }
-
-        public void OnHardwareInfoPacket(Packet0HardwareInfo packet) {
-            // Console.WriteLine("Hardware Info Received: " + packet.Information);
         }
 
         public string GetHardwareInfo(Packet0HardwareInfo.HardwareInfos info) {
@@ -68,15 +64,17 @@ namespace REghZyIOWrapper.Arduino {
             }
         }
 
-        public class HardwareInfoHelper : ACKPacketHelper<Packet0HardwareInfo> {
+        public class HardwareNamePacketHelper : ACKPacketHelper<Packet0HardwareInfo> {
             private readonly Func<Packet0HardwareInfo.HardwareInfos, string> GetInfoCallback;
 
-            public HardwareInfoHelper(PacketSystem packetSystem, Func<Packet0HardwareInfo.HardwareInfos, string> getInfoCallback) : base(packetSystem) {
+            public HardwareNamePacketHelper(PacketSystem packetSystem, Func<Packet0HardwareInfo.HardwareInfos, string> getInfoCallback) : base(packetSystem) {
                 this.GetInfoCallback = getInfoCallback;
             }
 
-            public void RequestInfo(Packet0HardwareInfo.HardwareInfos info) {
-                this.SendPacket(Packet0HardwareInfo.ServerToHardwareGetInfo(info));
+            public int Request(Packet0HardwareInfo.HardwareInfos info) {
+                Packet0HardwareInfo packet = Packet0HardwareInfo.ServerToHardwareGetInfo(info);
+                this.SendPacket(packet);
+                return packet.RequestID;
             }
 
             public override void OnProcessPacketToClientACK(Packet0HardwareInfo packet) {

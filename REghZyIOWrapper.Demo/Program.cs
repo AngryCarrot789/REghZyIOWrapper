@@ -13,15 +13,15 @@ namespace REghZyIOWrapper.Demo {
             string port = Console.ReadLine();
             try {
                 ArduinoDevice device = new ArduinoDevice(port);
-                device.PacketSystem.RegisterListener(
-                    new GenericPacketListener<Packet0HardwareInfo>(
-                        (packet) => {
-                            Console.WriteLine(
-                                $"Debug Hardware Packet: {Enum.GetName(packet.Code.GetType(), packet.Code)}, " +
-                                $"Data: {(packet.Information == null ? "NULL" : packet.Information)}, " +
-                                $"ID: {packet.RequestID}, " +
-                                $"Destination: {packet.Destination}");
-                        }));
+                // device.PacketSystem.RegisterListener(
+                //     new GenericPacketListener<Packet0HardwareInfo>(
+                //         (packet) => {
+                //             Console.WriteLine(
+                //                 $"Debug Hardware Packet: {Enum.GetName(packet.Code.GetType(), packet.Code)}, " +
+                //                 $"Data: {(packet.Information == null ? "NULL" : packet.Information)}, " +
+                //                 $"ID: {packet.RequestID}, " +
+                //                 $"Destination: {packet.Destination}");
+                //         }));
                 device.Connect();
                 Console.WriteLine($"Connected to {port}");
                 while (true) {

@@ -7,17 +7,17 @@
     /// </summary>
     public enum DestinationCode {
         /// <summary>
-        /// This packet was sent from the server
+        /// This packet was sent from the server to the hardware and the hardware receives it
         /// </summary>
         ToHardware = 1,
 
         /// <summary>
-        /// This packet was sent from the server and received by the hardware
+        /// This packet was sent from the server and received by the hardware, and processed internally 
         /// </summary>
         HardwareACK = 2,
 
         /// <summary>
-        /// This packet was sent from the hardware to the server
+        /// This packet was sent from the hardware to the server and processed by the server
         /// </summary>
         ToServer = 3,
     }

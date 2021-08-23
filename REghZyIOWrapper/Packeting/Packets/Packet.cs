@@ -56,6 +56,10 @@ namespace REghZyIOWrapper.Packeting.Packets {
         /// </summary>
         /// <param name="metaData"></param>
         protected Packet(int metaData = 0) {
+            if (metaData < PACKET_META_MIN || metaData > PACKET_META_MAX) {
+                throw new PacketCreationException($"Meta was not between {PACKET_META_MIN} and {PACKET_META_MAX}! It was {metaData}");
+            }
+
             this.MetaData = metaData;
         }
 

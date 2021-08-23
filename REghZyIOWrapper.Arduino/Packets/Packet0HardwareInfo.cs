@@ -74,11 +74,11 @@ namespace REghZyIOWrapper.Arduino.Packets {
         }
 
         public override void WriteToHardware(TextWriter writer) {
-            writer.Write($"{(int)this.Destination}.{this.RequestID}.{(int)this.Code}");
+            writer.Write($"{(int)this.Destination}.{PacketFormatting.StretchFront(this.RequestID.ToString(), 2, '0')}.{(int)this.Code}");
         }
 
         public override void WriteToServer(TextWriter writer) {
-            writer.Write($"{(int)this.Destination}.{this.RequestID}.{(int)this.Code}.{this.Information}");
+            writer.Write($"{(int)this.Destination}.{PacketFormatting.StretchFront(this.RequestID.ToString(), 2, '0')}.{(int)this.Code}.{this.Information}");
         }
     }
 }
