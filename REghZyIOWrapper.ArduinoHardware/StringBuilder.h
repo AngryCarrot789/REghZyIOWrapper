@@ -22,7 +22,7 @@ public:
 		return count;
 	}
 
-	int stoi(const char* str, int len, int startIndex) {
+	static int stoi(const char* str, int len, int startIndex) {
 		int i = 0, j = startIndex, end = j + len;
 		while (j < end) {
 			i = (i * 10) + (str[j++] - '0');
@@ -30,7 +30,7 @@ public:
 		return i;
 	}
 
-	int itostr(int value, char* str, int startIndex) {
+	static int itostr(int value, char* str, int startIndex) {
 		int i = ((int)log10((double)value)) + startIndex;
 		int len = 0;
 		while (value > 0) {
@@ -41,7 +41,7 @@ public:
 		return len;
 	}
 
-	void charset(char* buf, int value, int len) {
+	static void charset(char* buf, int value, int len) {
 		for (int i = 0; i < len; i++) {
 			buf[i] = value;
 		}
@@ -133,6 +133,31 @@ public:
 
 	StringBuilder& appendLine() {
 		return appendChar('\n');
+	}
+
+	StringBuilder substring(int startIndex, int endIndex) {
+		int len = endIndex - startIndex;
+		StringBuilder sb = StringBuilder(len);
+		sb.appendSubstring(mBuffer, startIndex, endIndex);
+		return sb;
+	}
+
+	int indexOf(const char value, int startIndex) {
+		for (int i = startIndex; i < mNextIndex; i++) {
+			if (mBuffer[i] == value) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	int indexOf(const char value) {
+		return indexOf(value, 0);
+	}
+
+	char charAt(int index) {
+		return mBuffer[index];
 	}
 
 	// Returns the number of characters that have been appended to this StringBuilder
@@ -240,8 +265,8 @@ private:
 	// Sets all of the chars including (and past) the next write index, to null
 	// So that toString() wont return extra stuff
 	void setNonCharToNull() {
-		for (int i = mNextIndex; 
-			i < mCapacity; 
+		for (int i = mNextIndex;
+			i < mCapacity;
 			i++) {
 			mBuffer[i] = 0;
 		}

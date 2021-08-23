@@ -1,13 +1,13 @@
 #ifndef CHAR_BUFFER
 #define CHAR_BUFFER
 
-#include <math.h>
+#include "StringBuilder.h"
 
 class CharBuffer {
 public:
 	CharBuffer(int size) {
 		this->buffer = new char[size];
-		DString::charset(this->buffer, 0, size);
+		StringBuilder::charset(this->buffer, 0, size);
 		this->writeIndex = 0;
 		this->readIndex = 0;
 		this->length = size;
@@ -38,9 +38,9 @@ public:
 
 	void appendint(const int intValue) {
 		char c[10];
-		DString::charset(c, 0, 10);
-		DString::itostr(intValue, c);
-		int nLen = DString::intlen(c);
+		StringBuilder::charset(c, 0, 10);
+		StringBuilder::itostr(intValue, c, 0);
+		int nLen = StringBuilder::intlen(c, 0);
 		int endIndex = this->writeIndex + nLen;
 		if (endIndex >= this->length) {
 			return;
@@ -80,7 +80,7 @@ public:
 			return -1;
 		}
 
-		int i = DString::stoi(this->buffer, len, this->readIndex);
+		int i = StringBuilder::stoi(this->buffer, len, this->readIndex);
 		this->readIndex += len;
 		return i;
 	}
@@ -161,7 +161,7 @@ public:
 	void clear() {
 		this->writeIndex = 0;
 		this->readIndex = 0;
-		DString::charset(this->buffer, 0, this->length);
+		StringBuilder::charset(this->buffer, 0, this->length);
 	}
 
 	// deletes the internal buffer using the free() method

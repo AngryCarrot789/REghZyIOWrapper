@@ -147,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CharBuffer.h" />
+    <ClInclude Include="StringBuilder.h" />
     <ClInclude Include="__vm\.REghZyIOWrapper.ArduinoHardware.vsarduino.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
