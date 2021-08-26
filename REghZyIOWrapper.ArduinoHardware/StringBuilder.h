@@ -59,7 +59,8 @@ public:
 		return (len < 1) ? 1 : len;
 	}
 
-	static void charset(char* buf, int value, int len) {
+	// Sets all the charactes in the given buffer (starting at 0, for the given len) to the given char value
+	static void charset(char* buf, char value, int len) {
 		for (int i = 0; i < len; i++) {
 			buf[i] = value;
 		}
@@ -185,12 +186,55 @@ public:
 		return -1;
 	}
 
+	// Inserts the given string (with the given length) starting at the given index
+	// Say this StringBuilder contained "hello", calling insert(2, "XD, 2)
+	// would result in the StringBuilder containing "heXDllo" (essentially pushing everything
+	// at index 2 and past, to the right and putting the value inbetween)
+	StringBuilder& insert(int index, const char* str, int len) {
+		ensureBufferSize(len);
+		for (int i = 0; i < len; i++) {
+			mBuffer[mNextIndex++] = str[i];
+		}
+
+		return ref();
+	}
+
+	// Moves all the characters at and past the given start index to the right (by the given amount (gap)), filling the gaps with a null character
+	// If gap is 0, nothing happens
+	StringBuilder& moveBlockRight(int start, int gap) {
+		if (gap < 1) {
+			return ref();
+		}
+
+		// "12345"
+		// moveBlockRight(2, 3)
+		// "12   345"
+
+		ensureBufferSize(gap);
+		int end = mNextIndex - 1;
+		// I = read element at this index
+		// J = set element at this index
+		for (int i = (end + gap), j = end; i >= (start + gap); i--, j--) {
+			mBuffer[j] = mBuffer[i];
+		}
+
+		return ref();
+	}
+
 	int indexOf(const char value) {
 		return indexOf(value, 0);
 	}
 
 	char charAt(int index) {
 		return mBuffer[index];
+	}
+
+	char* startPtr() {
+		return mBuffer;
+	}
+
+	char* endPtr() {
+		return mBuffer + mNextIndex;
 	}
 
 	// Returns the number of characters that have been appended to this StringBuilder
@@ -342,8 +386,13 @@ private:
 	}
 
 private:
+	// The capacity of the internal buffer
 	int mCapacity;
+
+	// The index where the next char is to be set (and also how many chars have been written)
 	int mNextIndex;
+
+	// The pointer to the buffer
 	char* mBuffer;
 };
 

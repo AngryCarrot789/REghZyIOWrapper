@@ -3,6 +3,7 @@ using REghZyIOWrapper.Exceptions;
 using REghZyIOWrapper.Packeting.Packets;
 
 namespace REghZyIOWrapper.Arduino.Packets {
+    [PacketImplementation]
     public class Packet1DigitalWrite : Packet {
         public int Pin { get; }
         public bool State { get; }

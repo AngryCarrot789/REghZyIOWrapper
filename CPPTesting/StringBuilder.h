@@ -13,16 +13,28 @@ public:
 	}
 
 	static int intlen(const char* str, int startIndex) {
-		int count = 0;
+		int len = 0;
 		char c = str[startIndex++];
 		while (c >= '0' && c <= '9') {
-			count++;
+			len++;
 			c = str[startIndex++];
 		}
-		return count;
+
+		return (len < 1) ? 1 : len;
 	}
 
-	int stoi(const char* str, int len, int startIndex) {
+	static int intlen(int value) {
+		int len = 0;
+		int temp = 1;
+		while (temp <= value) {
+			len++;
+			temp *= 10;
+		}
+
+		return (len < 1) ? 1 : len;
+	}
+
+	static int stoi(const char* str, int len, int startIndex) {
 		int i = 0, j = startIndex, end = j + len;
 		while (j < end) {
 			i = (i * 10) + (str[j++] - '0');
@@ -30,18 +42,25 @@ public:
 		return i;
 	}
 
-	int itostr(int value, char* str, int startIndex) {
-		int i = ((int)log10((double)value)) + startIndex;
+	static int itostr(int value, char* str, int startIndex) {
+		int i = (intlen(value) - 1) + startIndex;
 		int len = 0;
-		while (value > 0) {
-			str[i--] = ((value % 10) + '0');
-			value = value / 10;
-			len++;
+		if (value == 0) {
+			str[i] = '0';
 		}
-		return len;
+		else {
+			while (value > 0) {
+				str[i--] = ((value % 10) + '0');
+				value = value / 10;
+				len++;
+			}
+		}
+
+		return (len < 1) ? 1 : len;
 	}
 
-	void charset(char* buf, int value, int len) {
+	// Sets all the charactes in the given buffer (starting at 0, for the given len) to the given char value
+	static void charset(char* buf, char value, int len) {
 		for (int i = 0; i < len; i++) {
 			buf[i] = value;
 		}
@@ -105,6 +124,16 @@ public:
 	}
 
 	// Appends a string (with the given size) to this StringBuilder
+	StringBuilder& appendString(const StringBuilder& sb) {
+		ensureBufferSize(sb.mNextIndex);
+		for (int i = 0; i < sb.mNextIndex; i++) {
+			mBuffer[mNextIndex++] = sb.mBuffer[i];
+		}
+
+		return ref();
+	}
+
+	// Appends a string (with the given size) to this StringBuilder
 	StringBuilder& appendString(const char* str, int len) {
 		ensureBufferSize(len);
 		for (int i = 0; i < len; i++) {
@@ -125,30 +154,131 @@ public:
 
 	// Appends an integer
 	StringBuilder& appendInt(int value) {
-		char c[10];
-		charset(c, 0, 10);
-		int intLen = itostr(value, c, 0);
-		return appendString(c, intLen);
+		if (value == 0) {
+			return appendString("0");
+		}
+		else {
+			char c[10];
+			charset(c, 0, 10);
+			int intLen = itostr(value, c, 0);
+			return appendString(c, intLen);
+		}
 	}
 
 	StringBuilder& appendLine() {
 		return appendChar('\n');
 	}
 
+	StringBuilder substring(int startIndex, int endIndex) {
+		int len = endIndex - startIndex;
+		StringBuilder sb = StringBuilder(len);
+		sb.appendSubstring(mBuffer, startIndex, endIndex);
+		return sb;
+	}
+
+	int indexOf(const char value, int startIndex) {
+		for (int i = startIndex; i < mNextIndex; i++) {
+			if (mBuffer[i] == value) {
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
+	int indexOf(const char value) {
+		return indexOf(value, 0);
+	}
+
+	int indexOf(const char* value, int len, int startIndex) {
+		char first = value[0];
+		for (int i = startIndex; i < mNextIndex; i++) {
+			if (mBuffer[i] == first) {
+				for (int j = 0, k = i; j < len && k < mNextIndex; j++, k++) {
+					if (mBuffer[k] = value[j]) {
+						return i;
+					}
+				}
+			}
+		}
+
+		return -1;
+	}
+
+	int indexOf(const char* value, int len) {
+		return indexOf(value, len, 0);
+	}
+
+	int indexOf(const char* value) {
+		return indexOf(value, stringlen(value, 0), 0);
+	}
+
+	char charAt(int index) {
+		return mBuffer[index];
+	}
+
+	// Inserts the given string (with the given length) starting at the given index
+	// Say this StringBuilder contained "hello", calling insert(2, "XD, 2)
+	// would result in the StringBuilder containing "heXDllo" (essentially pushing everything
+	// at index 2 and past, to the right and putting the value inbetween)
+	StringBuilder& insert(int index, const char* str, int len) {
+		copyBlockRight(index, len);
+		for (int i = index, end = index + len, j = 0; i < end; i++, j++) {
+			mBuffer[i] = str[j];
+		}
+
+		return ref();
+	}
+
+	StringBuilder& insert(int index, const char* str) {
+		int len = stringlen(str, 0);
+		copyBlockRight(index, len);
+		for (int i = index, end = index + len, j = 0; i < end; i++, j++) {
+			mBuffer[i] = str[j];
+		}
+
+		return ref();
+	}
+
+	// Copies all the characters at and past the given start index to the right (by the given amount (gap)), filling the gaps with a null character
+	// If gap is 0, nothing happens
+	StringBuilder& copyBlockRight(int start, int gap) {
+		if (gap < 1) {
+			return ref();
+		}
+
+		ensureBufferSize(gap);
+		for (int i = (mNextIndex - 1); i >= start; i--) {
+			char c = mBuffer[i];
+			mBuffer[i + gap] = c;
+		}
+
+		mNextIndex += gap;
+		return ref();
+	}
+
+	char* startPtr() {
+		return mBuffer;
+	}
+
+	char* endPtr() {
+		return mBuffer + mNextIndex;
+	}
+
 	// Returns the number of characters that have been appended to this StringBuilder
 	int getSize() {
-		return this->mNextIndex;
+		return mNextIndex;
 	}
 
 	// Returns the capacity of the internal buffer (not including the null-termination char)
 	int getCapacity() {
-		return this->mCapacity;
+		return mCapacity;
 	}
 
 	// Returns the pointer to the internal null-terminated char buffer (aka c_str)
 	char* toString() {
 		setNonCharToNull();
-		return this->mBuffer;
+		return mBuffer;
 	}
 
 	// Returns a reference to this StringBuilder
@@ -185,6 +315,34 @@ public:
 	inline StringBuilder& operator+=(const char value) { return appendChar(value); }
 	inline StringBuilder& operator<<(const char value) { return appendChar(value); }
 
+	inline StringBuilder operator=(const char* value) {
+		return StringBuilder(value);
+	}
+
+	StringBuilder operator=(const char value) {
+		StringBuilder sb = StringBuilder(1);
+		return sb.appendChar(value);
+	}
+
+	StringBuilder operator=(const int value) {
+		char c[10];
+		int len = itostr(value, c, 0);
+		return StringBuilder(c, len, len);
+	}
+
+	// Clears the buffer and sets the write index to 0
+	StringBuilder& clear() {
+		for (int i = 0; i < mNextIndex; i++) {
+			mBuffer[i] = 0;
+		}
+		mNextIndex = 0;
+	}
+
+	// Does not clear the actual buffer, simply resets the write index to 0
+	StringBuilder& fastClear() {
+		mNextIndex = 0;
+	}
+
 	// Ensures the internal buffer can fit the given number of extra characters (extraSize)
 	// Returns true if the buffer didn't require a resize, or if it was successfully resized
 	// Returns false if the buffer failed to resize (possibly due to memory fragmentation)
@@ -205,11 +363,15 @@ public:
 		return false;
 	}
 
+	void deleteBuffer() {
+		delete[](mBuffer);
+	}
+
 private:
 	// Sets the last character in this StringBuilder as 0 (aka a null character, allowing strlen to be used)
 	void setLastAsNull() {
 		setNonCharToNull();
-		this->mBuffer[this->mCapacity] = 0;
+		mBuffer[mCapacity] = 0;
 	}
 
 	// Resizes the internal buffer to the given size, optionally copying the old buffer into the new one
@@ -217,7 +379,7 @@ private:
 		if (copyBuffer) {
 			// hopefully prevents lots of cases of heap fragmentation on 
 			// things that dont have much ram... like arduinos
-			void* newBuffer = realloc(mBuffer, newSize);
+			void* newBuffer = realloc(mBuffer, newSize + 1);
 			if (newBuffer == nullptr) {
 				return false;
 			}
@@ -240,8 +402,8 @@ private:
 	// Sets all of the chars including (and past) the next write index, to null
 	// So that toString() wont return extra stuff
 	void setNonCharToNull() {
-		for (int i = mNextIndex; 
-			i < mCapacity; 
+		for (int i = mNextIndex;
+			i < mCapacity;
 			i++) {
 			mBuffer[i] = 0;
 		}
@@ -252,8 +414,13 @@ private:
 	}
 
 private:
+	// The capacity of the internal buffer
 	int mCapacity;
+
+	// The index where the next char is to be set (and also how many chars have been written)
 	int mNextIndex;
+
+	// The pointer to the buffer
 	char* mBuffer;
 };
 

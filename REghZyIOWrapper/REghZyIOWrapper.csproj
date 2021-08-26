@@ -58,6 +58,7 @@
     <Compile Include="Packeting\Packets\PacketACK.cs" />
     <Compile Include="Packeting\Packets\Packet.cs" />
     <Compile Include="Packeting\Packets\DestinationCode.cs" />
+    <Compile Include="Packeting\Packets\PacketImplementation.cs" />
     <Compile Include="Utils\PacketFormatting.cs" />
     <Compile Include="Packeting\SerialPacketSystem.cs" />
     <Compile Include="Packeting\SpoolingPacketSystem.cs" />

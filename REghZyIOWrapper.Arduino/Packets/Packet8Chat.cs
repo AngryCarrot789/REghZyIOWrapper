@@ -2,6 +2,7 @@
 using REghZyIOWrapper.Packeting.Packets;
 
 namespace REghZyIOWrapper.Arduino.Packets {
+    [PacketImplementation]
     public class Packet8Chat : Packet {
         public string Message { get; }
 

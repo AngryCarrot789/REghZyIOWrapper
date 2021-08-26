@@ -1,23 +1,28 @@
 ﻿namespace REghZyIOWrapper.Packeting.Packets {
     /// <summary>
-    /// The server creates <see cref="ToHardware"/> and sends it to the client. The client receives the raw packet data, and constructs 
-    /// an acknowledgement (<see cref="HardwareACK"/>) packet which it processes internally (see <see cref="ArduinoDevice.HardwareInfoHelper"/>)
-    /// and then creates a packet with <see cref="ToServer"/>, fills in the relevent information, and sends it back to the server. The server receives
-    /// that and processes it (see <see cref="ArduinoDevice.HardwareInfoHelper"/>)
+    /// The server creates <see cref="ToClient"/> and sends it to the client
+    /// <para>
+    /// The client receives the raw packet data, and constructs an acknowledgement (<see cref="ClientACK"/>) 
+    /// packet which it processes internally (see <see cref="ACKPacketHelper{T}.OnProcessPacketToClientACK(T)"/>) and then creates a packet with 
+    /// <see cref="ToServer"/>, fills in the relevent information, and sends it back to the server
+    /// </para>
+    /// <para>
+    /// The server receives that and processes it (see <see cref="ACKPacketHelper{T}.OnProcessPacketToServer(T)"/>)
+    /// </para>
     /// </summary>
     public enum DestinationCode {
         /// <summary>
-        /// This packet was sent from the server to the hardware and the hardware receives it
+        /// This packet was sent from the server to the client and the client receives it. Usually, a client-side packet instance won't contain this destination code
         /// </summary>
-        ToHardware = 1,
+        ToClient = 1,
 
         /// <summary>
-        /// This packet was sent from the server and received by the hardware, and processed internally 
+        /// This packet was sent from the server and received by the client, and the client is processing the packet instance
         /// </summary>
-        HardwareACK = 2,
+        ClientACK = 2,
 
         /// <summary>
-        /// This packet was sent from the hardware to the server and processed by the server
+        /// This packet was sent from the client to the server, and is processed by the server
         /// </summary>
         ToServer = 3,
     }

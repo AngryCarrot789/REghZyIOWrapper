@@ -4,6 +4,7 @@ using REghZyIOWrapper.Packeting.Packets;
 using REghZyIOWrapper.Utils;
 
 namespace REghZyIOWrapper.Arduino.Packets {
+    [PacketImplementation]
     public class Packet2PWMWrite : Packet {
         public int Pin { get; }
         public int PWM { get; }

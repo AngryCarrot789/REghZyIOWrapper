@@ -42,6 +42,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ArduinoDevice.cs" />
+    <Compile Include="Packets\ACK\AnalogueReadACKHelper.cs" />
+    <Compile Include="Packets\ACK\HardwareInfoACKHelper.cs" />
     <Compile Include="Packets\Packet0HardwareInfo.cs" />
     <Compile Include="Packets\Packet2PWMWrite.cs" />
     <Compile Include="Packets\Packet1DigitalWrite.cs" />

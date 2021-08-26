@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using REghZyIOWrapper.Exceptions;
 using REghZyIOWrapper.Utils;
@@ -76,7 +77,37 @@ namespace REghZyIOWrapper.Packeting.Packets {
         /// </summary>
         /// <typeparam name="T"></typeparam>
         public static void RunPacketCtor<T>() {
-            RuntimeHelpers.RunClassConstructor(typeof(T).TypeHandle);
+            RunPacketCtor(typeof(T));
+        }
+
+        /// <summary>
+        /// Runs a packet's static constructor. Useful if you register your packet creator in there.
+        /// This method should usually be run before you start using packets, or packet systems 
+        /// (e.g during app startup), otherwise the creators wont be registered :-)
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public static void RunPacketCtor(Type type) {
+            RuntimeHelpers.RunClassConstructor(type.TypeHandle);
+        }
+
+        /// <summary>
+        /// Finds all packet types that use the <see cref="PacketImplementation"/> attribute
+        /// </summary>
+        /// <param name="allowAbstract"></param>
+        /// <param name="checkInheritance"></param>
+        /// <returns></returns>
+        public static IEnumerable<Type> FindPacketImplementations(bool allowAbstract = true, bool checkInheritance = true) {
+            foreach(Assembly assembly in AppDomain.CurrentDomain.GetAssemblies()) {
+                foreach(Type type in assembly.GetTypes()) {
+                    if (type.GetCustomAttribute(typeof(PacketImplementation), checkInheritance) != null) {
+                        if (type.IsAbstract && (!allowAbstract)) {
+                            continue;
+                        }
+
+                        yield return type;
+                    }
+                }
+            }
         }
 
         /// <summary>

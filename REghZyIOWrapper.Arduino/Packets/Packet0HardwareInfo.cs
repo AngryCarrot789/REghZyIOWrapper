@@ -4,7 +4,8 @@ using REghZyIOWrapper.Packeting.Packets;
 using REghZyIOWrapper.Utils;
 
 namespace REghZyIOWrapper.Arduino.Packets {
-    public sealed class Packet0HardwareInfo : PacketACK {
+    [PacketImplementation]
+    public class Packet0HardwareInfo : PacketACK {
 
         // The first char specifies who sent the packet, aka the source; the server, or client
         // If it's S, the server wants info. If its C, the server has already requested info before, and the client is sending that info back
@@ -12,7 +13,8 @@ namespace REghZyIOWrapper.Arduino.Packets {
         // Hardware -> Server = "C.ID.TYPE.DATA"
 
         public enum HardwareInfos {
-            HardwareName = 1 // request the name of the hardware
+            HardwareName = 1, // request the name of the hardware
+            SerialPortName = 2  // The COM port the hardware is on
         }
 
         public HardwareInfos Code { get; }
@@ -26,12 +28,12 @@ namespace REghZyIOWrapper.Arduino.Packets {
 
         // The server runs this to create a new fetch info request
         public static Packet0HardwareInfo ServerToHardwareGetInfo(HardwareInfos info) {
-            return new Packet0HardwareInfo(DestinationCode.ToHardware, GetNextID<Packet0HardwareInfo>(), info, null);
+            return new Packet0HardwareInfo(DestinationCode.ToClient, GetNextID<Packet0HardwareInfo>(), info, null);
         }
 
         // The client receives this as an acknowledgement that the server wants info
         public static Packet0HardwareInfo ServerToHardwareACK(int id, HardwareInfos info) {
-            return new Packet0HardwareInfo(DestinationCode.HardwareACK, id, info, null);
+            return new Packet0HardwareInfo(DestinationCode.ClientACK, id, info, null);
         }
 
         // The client sends this to the server containing the data required
@@ -52,7 +54,7 @@ namespace REghZyIOWrapper.Arduino.Packets {
 
                 DestinationCode destination = split[0].ParseEnum<DestinationCode>();
                 // this packet is received from a server
-                if (destination == DestinationCode.ToHardware) {
+                if (destination == DestinationCode.ToClient) {
                     if (split.Length < 3) {
                         throw new PacketCreationException("String did not contain 2 dot separators");
                     }
@@ -60,7 +62,7 @@ namespace REghZyIOWrapper.Arduino.Packets {
                     return ServerToHardwareACK(split[1].ParseInt(), (HardwareInfos)split[2].ParseInt());
                 }
                 // this packet is received from a client, so it holds very important info
-                else if (destination == DestinationCode.HardwareACK || destination == DestinationCode.ToServer) {
+                else if (destination == DestinationCode.ClientACK || destination == DestinationCode.ToServer) {
                     if (split.Length < 4) {
                         throw new PacketCreationException("String did not contain 3 dot separators");
                     }
@@ -73,12 +75,14 @@ namespace REghZyIOWrapper.Arduino.Packets {
             });
         }
 
-        public override void WriteToHardware(TextWriter writer) {
-            writer.Write($"{(int)this.Destination}.{PacketFormatting.StretchFront(this.RequestID.ToString(), 2, '0')}.{(int)this.Code}");
+        public override bool WriteToClient(TextWriter writer) {
+            writer.Write($"{(int)this.Code}");
+            return true;
         }
 
-        public override void WriteToServer(TextWriter writer) {
-            writer.Write($"{(int)this.Destination}.{PacketFormatting.StretchFront(this.RequestID.ToString(), 2, '0')}.{(int)this.Code}.{this.Information}");
+        public override bool WriteToServer(TextWriter writer) {
+            writer.Write($"{(int)this.Code}.{this.Information}");
+            return true;
         }
     }
 }
