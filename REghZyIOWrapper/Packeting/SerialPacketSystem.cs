@@ -39,7 +39,7 @@ namespace REghZyIOWrapper.Packeting {
         }
 
         /// <summary>
-        /// Immidiately sends the given packet. <see cref="SpoolingPacketSystem.QueuePacket(Packet)"/> is recommended to reduce waiting for packets to be written
+        /// Immidiately sends the given packet to the serial device
         /// </summary>
         /// <param name="packet"></param>
         public override void SendPacket(Packet packet) {
@@ -57,8 +57,8 @@ namespace REghZyIOWrapper.Packeting {
                 Console.WriteLine("------------------------------------------------------------");
                 Console.WriteLine($"Failed to create packet: {e.Message ?? "(NO MESSAGE)"}");
                 Console.WriteLine($"Raw packet data: {e.PacketData ?? "(PACKET DATA WAS NULL)"}");
-                string stacktraceA = e.StackTrace;
-                Console.WriteLine($"Stacktrace:\n{stacktraceA ?? "(UNAVAILABLE)"}");
+                Console.WriteLine($"Stacktrace:");
+                Console.WriteLine(e.StackTrace ?? "(UNAVAILABLE)");
                 int count = 0;
                 Exception inner = e.InnerException;
                 while (inner != null && count < 20) {
@@ -80,7 +80,7 @@ namespace REghZyIOWrapper.Packeting {
                 Console.WriteLine("------------------------------------------------------------");
                 Console.WriteLine($"Failed to create a packet due to a corrupt packet header: {e.Message ?? "(UNAVAILABLE)"}");
                 Console.WriteLine("Data: " + line);
-                Console.WriteLine(e.StackTrace);
+                Console.WriteLine(e.StackTrace ?? "(UNAVAILABLE)");
                 Console.WriteLine("------------------------------------------------------------");
                 return;
             }

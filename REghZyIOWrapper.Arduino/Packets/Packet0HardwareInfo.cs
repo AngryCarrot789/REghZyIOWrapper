@@ -26,53 +26,62 @@ namespace REghZyIOWrapper.Arduino.Packets {
             this.Information = returnInfo;
         }
 
-        // The server runs this to create a new fetch info request
-        public static Packet0HardwareInfo ServerToHardwareGetInfo(HardwareInfos info) {
-            return new Packet0HardwareInfo(DestinationCode.ToClient, GetNextID<Packet0HardwareInfo>(), info, null);
-        }
-
-        // The client receives this as an acknowledgement that the server wants info
-        public static Packet0HardwareInfo ServerToHardwareACK(int id, HardwareInfos info) {
-            return new Packet0HardwareInfo(DestinationCode.ClientACK, id, info, null);
-        }
-
-        // The client sends this to the server containing the data required
-        public static Packet0HardwareInfo HardwareToServer(int id, HardwareInfos info, string data) {
-            return new Packet0HardwareInfo(DestinationCode.ToServer, id, info, data);
-        }
+        // // The server runs this to create a new fetch info request
+        // public static Packet0HardwareInfo ServerToHardwareGetInfo(HardwareInfos info) {
+        //     return new Packet0HardwareInfo(DestinationCode.ToClient, GetNextID<Packet0HardwareInfo>(), info, null);
+        // }
+        // 
+        // // The client receives this as an acknowledgement that the server wants info
+        // public static Packet0HardwareInfo ServerToHardwareACK(int id, HardwareInfos info) {
+        //     return new Packet0HardwareInfo(DestinationCode.ClientACK, id, info, null);
+        // }
+        // 
+        // // The client sends this to the server containing the data required
+        // public static Packet0HardwareInfo HardwareToServer(int id, HardwareInfos info, string data) {
+        //     return new Packet0HardwareInfo(DestinationCode.ToServer, id, info, data);
+        // }
 
         static Packet0HardwareInfo() {
-            RegisterPacket<Packet0HardwareInfo>(0, (meta, str) => {
-                if (string.IsNullOrEmpty(str)) {
-                    throw new PacketCreationException("String value was null");
-                }
-
-                string[] split = str.Split('.');
-                if (split.Length == 0) {
-                    throw new PacketCreationException("Packet did not contain any dot separators");
-                }
-
-                DestinationCode destination = split[0].ParseEnum<DestinationCode>();
-                // this packet is received from a server
-                if (destination == DestinationCode.ToClient) {
-                    if (split.Length < 3) {
-                        throw new PacketCreationException("String did not contain 2 dot separators");
-                    }
-
-                    return ServerToHardwareACK(split[1].ParseInt(), (HardwareInfos)split[2].ParseInt());
-                }
-                // this packet is received from a client, so it holds very important info
-                else if (destination == DestinationCode.ClientACK || destination == DestinationCode.ToServer) {
-                    if (split.Length < 4) {
-                        throw new PacketCreationException("String did not contain 3 dot separators");
-                    }
-
-                    return HardwareToServer(split[1].ParseInt(), (HardwareInfos)split[2].ParseInt(), split[3]);
-                }
-                else {
-                    throw new PacketCreationException("Packet did not contain a know starting char (which states the source location)");
-                }
+            RegisterACKPacket<Packet0HardwareInfo>(0, (d, id, data) => {
+                return new Packet0HardwareInfo(d, id, data.ParseEnum<HardwareInfos>(), null);
+            }, (d, id, data) => {
+                return new Packet0HardwareInfo(d, id, data.GetWordAt(0, '.').ParseEnum<HardwareInfos>(), data.GetWordAt(1, '.'));
             });
+
+            // RegisterPacket<Packet0HardwareInfo>(0, (meta, str) => {
+            //     if (string.IsNullOrEmpty(str)) {
+            //         throw new PacketCreationException("String value was null");
+            //     }
+            // 
+            //     int dotA = str.IndexOf('.');
+            //     if (dotA == -1) {
+            //         throw new PacketCreationException("Packet did not contain any dot separators");
+            //     }
+            // 
+            //     int dotB = str.IndexOf('.', dotA + 1);
+            // 
+            //     DestinationCode destination = str.JSubstring(0, dotA).ParseEnum<DestinationCode>();
+            //     // this packet is received from a server
+            //     if (destination == DestinationCode.ToClient) {
+            //         if (dotB == -1) {
+            //             throw new PacketCreationException("String did not contain 2 dot separators");
+            //         }
+            // 
+            //         return ServerToHardwareACK(str.JSubstring(dotA + 1, dotB).ParseInt(), (HardwareInfos)str.JSubstring(dotB + 1).ParseInt());
+            //     }
+            //     // this packet is received from a client, so it holds very important info
+            //     else if (destination == DestinationCode.ClientACK || destination == DestinationCode.ToServer) {
+            //         int dotC = str.IndexOf('.', dotB + 1);
+            //         if (dotC == -1) {
+            //             throw new PacketCreationException("String did not contain 3 dot separators");
+            //         }
+            // 
+            //         return HardwareToServer(str.JSubstring(dotA + 1, dotB).ParseInt(), (HardwareInfos)str.JSubstring(dotB + 1, dotC).ParseInt(), str.JSubstring(dotC + 1));
+            //     }
+            //     else {
+            //         throw new PacketCreationException("Packet did not contain a know starting char (which states the source location)");
+            //     }
+            // });
         }
 
         public override bool WriteToClient(TextWriter writer) {

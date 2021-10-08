@@ -8,25 +8,17 @@ using REghZyIOWrapper.Utils;
 
 namespace REghZyIOWrapper.Packeting.Packets {
     /// <summary>
-    /// <para>
-    /// A packet is essentially a wrapper for data
-    /// </para>
-    /// <para>
-    /// To write data, see <see cref="Write"/>
-    /// </para>
-    /// <para>
-    /// Reading data is done automatically (see <see cref="RegisterPacket{T}"/> to register a creator)
-    /// </para>
+    /// A packet is essentially a wrapper for data 
     /// </summary>
     public abstract class Packet {
-        public const int TOTAL_PACKETS_POSSIBLE = 100;
-        public const int PACKET_ID_MIN = 0;
-        public const int PACKET_ID_MAX = 99;
-        public const int PACKET_ID_LENGTH = 2;
-        public const int PACKET_META_MIN = 0;
-        public const int PACKET_META_MAX = 99;
-        public const int PACKET_META_LENGTH = 2;
-        public const int PACKET_HEADER_LENGTH = PACKET_ID_LENGTH + PACKET_META_LENGTH;
+        public const int TOTAL_PACKETS_POSSIBLE = 100;  // Total number of packets possible
+        public const int PACKET_ID_MIN = 0;             // The smallest ID a packet can have
+        public const int PACKET_ID_MAX = 99;            // The biggest ID a packet can have
+        public const int PACKET_ID_LENGTH = 2;          // The length of the ID in the packet header (with max being 99, that makes it 2)
+        public const int PACKET_META_MIN = 0;           // The smallest metadata value a packet can have
+        public const int PACKET_META_MAX = 99;          // The biggest metadata value a packet can have
+        public const int PACKET_META_LENGTH = 2;        // The length of the metadata value in the packet header (with max being 99, that makes it 2)
+        public const int PACKET_HEADER_LENGTH = PACKET_ID_LENGTH + PACKET_META_LENGTH; // The length of the packet header (and thus the smallest length of a packet)
 
         /// <summary>
         /// An array of packet creators (taking the metadat and packet data (non-null)) and returns a packet instance
@@ -47,7 +39,7 @@ namespace REghZyIOWrapper.Packeting.Packets {
         /// <summary>
         /// Extra data for this packet (that is sent after the ID)
         /// <para>
-        /// This cannot be below 0 or above 99 (100 possible metadata values)
+        /// This cannot be below <see cref="PACKET_META_MIN"/> or above <see cref="PACKET_META_MAX"/>
         /// </para>
         /// </summary>
         public int MetaData { get; }
@@ -73,7 +65,7 @@ namespace REghZyIOWrapper.Packeting.Packets {
         /// <summary>
         /// Runs a packet's static constructor. Useful if you register your packet creator in there.
         /// This method should usually be run before you start using packets, or packet systems 
-        /// (e.g during app startup), otherwise the creators wont be registered :-)
+        /// (e.g during app startup), otherwise the packets wont be registered :-)
         /// </summary>
         /// <typeparam name="T"></typeparam>
         public static void RunPacketCtor<T>() {
@@ -83,7 +75,7 @@ namespace REghZyIOWrapper.Packeting.Packets {
         /// <summary>
         /// Runs a packet's static constructor. Useful if you register your packet creator in there.
         /// This method should usually be run before you start using packets, or packet systems 
-        /// (e.g during app startup), otherwise the creators wont be registered :-)
+        /// (e.g during app startup), otherwise the packets wont be registered :-)
         /// </summary>
         /// <typeparam name="T"></typeparam>
         public static void RunPacketCtor(Type type) {
@@ -91,7 +83,7 @@ namespace REghZyIOWrapper.Packeting.Packets {
         }
 
         /// <summary>
-        /// Finds all packet types that use the <see cref="PacketImplementation"/> attribute
+        /// Finds all types that use the <see cref="PacketImplementation"/> attribute, and inherit the <see cref="Packet"/> class
         /// </summary>
         /// <param name="allowAbstract"></param>
         /// <param name="checkInheritance"></param>
@@ -104,7 +96,9 @@ namespace REghZyIOWrapper.Packeting.Packets {
                             continue;
                         }
 
-                        yield return type;
+                        if (type.IsSubclassOf(typeof(Packet))) {
+                            yield return type;
+                        }
                     }
                 }
             }
@@ -128,12 +122,12 @@ namespace REghZyIOWrapper.Packeting.Packets {
         /// <typeparam name="T">The type of packet that is being registerd</typeparam>
         public static void RegisterPacket<T>(int id, Func<int, string, T> creator) where T : Packet {
             if (id < PACKET_ID_MIN || id > PACKET_ID_MAX) {
-                throw new InvalidDataException($"Packet ID was not between {PACKET_META_MIN} and {PACKET_META_MAX}! It was {id}");
+                throw new InvalidDataException($"Packet ID was not between '{PACKET_META_MIN}' and '{PACKET_META_MAX}'! It was '{id}'");
             }
 
             Type type = typeof(T);
             if (type == typeof(Packet)) {
-                throw new Exception("Packet type cannot be the abstract Packet type");
+                throw new Exception("Packet type cannot be the base abstract Packet type");
             }
             
             // should only really need to check the first or second one (not third, considering it can be null)
@@ -204,14 +198,14 @@ namespace REghZyIOWrapper.Packeting.Packets {
                         return creator(meta, packetData.Substring(PACKET_HEADER_LENGTH));
                     }
                     catch(Exception e) {
-                        throw new PacketCreationException($"Exception while executing packet creator for ID {id} and meta {meta}", packetData, e);
+                        throw new PacketCreationException($"Exception while executing packet creator for ID '{id}' and meta '{meta}", packetData, e);
                     }
                 }
 
-                throw new InvalidDataException($"The value ({stringMeta}) was not parsable as the packet's MetaData");
+                throw new InvalidDataException($"The value '{stringMeta}' was not parsable as the packet's MetaData");
             }
 
-            throw new InvalidDataException($"The value ({stringId}) was not parsable as the packet's ID");
+            throw new InvalidDataException($"The value '{stringId}' was not parsable as the packet's ID");
         }
 
         /// <summary>
@@ -226,10 +220,10 @@ namespace REghZyIOWrapper.Packeting.Packets {
             }
 
             int id = GetPacketID(packet);
-            if (id < PACKET_ID_MIN || id > PACKET_ID_MAX) {
-                // no need to check the ID because the ID wouldn't've been registered anyway if it was out of range... but eh
-                throw new InvalidDataException($"ID was not between {PACKET_META_MIN} and {PACKET_META_MAX}! It was {id}");
-            }
+            // if (id < PACKET_ID_MIN || id > PACKET_ID_MAX) {
+            //     // no need to check the ID because the ID wouldn't've been registered anyway if it was out of range... but eh
+            //     throw new InvalidDataException($"ID was not between {PACKET_META_MIN} and {PACKET_META_MAX}! It was {id}");
+            // }
 
             int meta = packet.MetaData;
             if (meta < PACKET_META_MIN || meta > PACKET_META_MAX) {

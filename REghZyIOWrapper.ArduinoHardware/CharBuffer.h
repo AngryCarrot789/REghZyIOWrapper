@@ -37,20 +37,23 @@ public:
 	}
 
 	void appendint(const int intValue) {
-		char c[10];
-		StringBuilder::charset(c, 0, 10);
-		StringBuilder::itostr(intValue, c, 0);
-		int nLen = StringBuilder::intlen(c, 0);
-		int endIndex = this->writeIndex + nLen;
-		if (endIndex >= this->length) {
-			return;
+		if (intValue == 0) {
+			appendString("0", 1);
 		}
+		else {
+			char c[10] = { 0 };
+			int nLen = StringBuilder::itostr(intValue, c, 0);
+			int endIndex = this->writeIndex + nLen;
+			if (endIndex >= this->length) {
+				return;
+			}
 
-		for (int j = this->writeIndex, k = 0; j < endIndex; j++, k++) {
-			this->buffer[j] = c[k];
+			for (int j = this->writeIndex, k = 0; j < endIndex; j++, k++) {
+				this->buffer[j] = c[k];
+			}
+
+			this->writeIndex = endIndex;
 		}
-
-		this->writeIndex = endIndex;
 	}
 
 	void appendBool(const bool value) {

@@ -1,5 +1,6 @@
 ﻿using System;
 using REghZyIOWrapper.Packeting;
+using REghZyIOWrapper.Packeting.Packets;
 
 namespace REghZyIOWrapper.Arduino.Packets.ACK {
     /// <summary>
@@ -13,14 +14,14 @@ namespace REghZyIOWrapper.Arduino.Packets.ACK {
         }
 
         public int SendRequest(Packet0HardwareInfo.HardwareInfos info) {
-            Packet0HardwareInfo packet = Packet0HardwareInfo.ServerToHardwareGetInfo(info);
+            Packet0HardwareInfo packet = new Packet0HardwareInfo(DestinationCode.ToClient, PacketACK.GetNextID<Packet0HardwareInfo>(), info, null);
             this.SendPacket(packet);
             return packet.RequestID;
         }
 
         public override void OnProcessPacketToClientACK(Packet0HardwareInfo packet) {
             string info = this.GetInfoCallback(packet.Code);
-            this.SendPacket(Packet0HardwareInfo.HardwareToServer(packet.RequestID, packet.Code, info));
+            this.SendPacket(new Packet0HardwareInfo(DestinationCode.ToServer, packet.RequestID, packet.Code, info));
         }
 
         public override void OnProcessPacketToServer(Packet0HardwareInfo packet) {

@@ -34,13 +34,56 @@ namespace REghZyIOWrapper.Packeting.Packets {
         /// </summary>
         public int RequestID { get; }
 
-        public PacketACK(DestinationCode destinationCode, int requestId) : base(requestId) {
+        public PacketACK(DestinationCode destination, int requestId) : base(requestId) {
             if (requestId < REQUEST_ID_MIN || requestId > REQUEST_ID_MAX) {
                 throw new PacketCreationException($"Request ID ({requestId}) was not between {REQUEST_ID_MIN} and {REQUEST_ID_MAX}");
             }
 
             this.RequestID = requestId;
-            this.Destination = destinationCode;
+            this.Destination = destination;
+        }
+
+        /// <summary>
+        /// Registers an ACK packet, with the given ID, and the given packet creators for receiving packets from the server, and creating packets for the server
+        /// </summary>
+        /// <typeparam name="T">The type of ACK packet</typeparam>
+        /// <param name="id">The packet ID</param>
+        /// <param name="fromServerToHardwareAck">
+        /// The creator used to create packets that get processed internally (by an ACK packet listener)
+        /// <para>
+        /// The first parameter is the request ID, and the 2nd parameter is the rest of the packet data (not including the destination and request ID)
+        /// </para>
+        /// </param>
+        /// <param name="fromHardwaretoServer"></param>
+        public static void RegisterACKPacket<T>(int id, Func<DestinationCode, int, string, T> fromServerToHardwareAck, Func<DestinationCode, int, string, T> fromHardwaretoServer) where T : PacketACK {
+            RegisterPacket<T>(id, (meta, str) => {
+                if (string.IsNullOrEmpty(str)) {
+                    throw new PacketCreationException("String value was null");
+                }
+
+                int dotA = str.IndexOf('.');
+                if (dotA == -1) {
+                    throw new PacketCreationException("Packet did not contain any dot separators");
+                }
+
+                int dotB = str.IndexOf('.', dotA + 1);
+                if (dotB == -1) {
+                    throw new PacketCreationException("String did not contain 2 dot separators");
+                }
+
+                DestinationCode destination = str.JSubstring(0, dotA).ParseEnum<DestinationCode>();
+                // this packet is received from a server
+                if (destination == DestinationCode.ToClient) {
+                    return fromServerToHardwareAck(DestinationCode.ClientACK, str.JSubstring(dotA + 1, dotB).ParseInt(), str.JSubstring(dotB + 1));
+                }
+                // this packet is received from a client, so it holds very important info
+                else if (destination == DestinationCode.ClientACK || destination == DestinationCode.ToServer) {
+                    return fromHardwaretoServer(DestinationCode.ToServer, str.JSubstring(dotA + 1, dotB).ParseInt(), str.JSubstring(dotB + 1));
+                }
+                else {
+                    throw new PacketCreationException("Packet's destination was not to the client or a click acknowledgement");
+                }
+            });
         }
 
         /// <summary>
@@ -69,7 +112,7 @@ namespace REghZyIOWrapper.Packeting.Packets {
 
         public override void Write(TextWriter writer) {
             if (this.Destination == DestinationCode.ClientACK) {
-                throw new Exception("Attempted to write ACK packet that was a client acknowledgement (Packet should've been recreated)");
+                throw new Exception("Attempted to write a click ACK packet (Packet should've been recreated using the DestinationCode.ToServer code)");
             }
 
             if (this.Destination != DestinationCode.ToClient && this.Destination != DestinationCode.ToServer) {

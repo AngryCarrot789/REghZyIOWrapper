@@ -37,6 +37,11 @@ namespace REghZyIOWrapper.Listeners {
             get => this._onPacketReceived;
         }
 
+        /// <summary>
+        /// Creates a new generic listener using the given callback method, and whether to cancel the packet on received
+        /// </summary>
+        /// <param name="onPacketReceived"></param>
+        /// <param name="cancelOnReceive"></param>
         public GenericPacketListener(Action<T> onPacketReceived, bool cancelOnReceive = false) {
             this._acceptedType = typeof(T);
             this._cancelOnReceive = cancelOnReceive;

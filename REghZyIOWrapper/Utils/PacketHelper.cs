@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Xml.Schema;
 using REghZyIOWrapper.Exceptions;
 
 namespace REghZyIOWrapper.Utils {
@@ -62,6 +63,41 @@ namespace REghZyIOWrapper.Utils {
             else {
                 return value > min && value < max;
             }
+        }
+
+        /// <summary>
+        /// Returns a string between the index of the given character, and the next index of the given character, where the word-index is of the given index
+        /// <para>
+        /// SubstringWordBetween("hello.there.xd.lol", 0 '.') == "hello"
+        /// </para>
+        /// <para>
+        /// SubstringWordBetween("hello.there.xd.lol", 2 '.') == "xd"
+        /// </para>
+        /// </summary>
+        /// <param name="value">The value to search</param>
+        /// <param name="splitter">The character that splits the words (new line, whitespace, etc)</param>
+        /// <param name="index">The word index</param>
+        /// <returns></returns>
+        public static string GetWordAt(this string value, int index, char splitter = '.') {
+            int indexA = -1;
+            int indexB = value.IndexOf(splitter);
+            if (indexB == -1) {
+                throw new IndexOutOfRangeException($"The value ({value}) did not contain the given character '{splitter}' (tried to index at {index})");
+            }
+
+            for(int i = 0; i < index; i++) {
+                if (indexB == -1 || indexB >= value.Length) {
+                    throw new IndexOutOfRangeException($"The value ({value}) didn't contain a '{splitter}' character past the index '{indexA}' (tried to index at {index}, but the value only contained {value.Count(splitter)} of the character)");
+                }
+
+                indexA = indexB;
+                indexB = value.IndexOf(splitter, indexA + 1);
+                if (indexB == -1) {
+                    indexB = value.Length;
+                }
+            }
+
+            return value.JSubstring(indexA + 1, indexB);
         }
     }
 }

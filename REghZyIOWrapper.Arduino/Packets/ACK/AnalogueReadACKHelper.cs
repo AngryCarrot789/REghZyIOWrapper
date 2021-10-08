@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Net.NetworkInformation;
 using REghZyIOWrapper.Packeting;
+using REghZyIOWrapper.Packeting.Packets;
 
 namespace REghZyIOWrapper.Arduino.Packets.ACK {
     /// <summary>
@@ -13,14 +15,14 @@ namespace REghZyIOWrapper.Arduino.Packets.ACK {
         }
 
         public int SendRequest(int pin) {
-            Packet3AnalogueRead packet = Packet3AnalogueRead.ServerToHardwareGetInfo(pin);
+            Packet3AnalogueRead packet = new Packet3AnalogueRead(DestinationCode.ToClient, PacketACK.GetNextID<Packet0HardwareInfo>(), pin, -1);
             this.SendPacket(packet);
             return packet.RequestID;
         }
 
         public override void OnProcessPacketToClientACK(Packet3AnalogueRead packet) {
             int value = this.GetAnalogueRead(packet.Pin);
-            this.SendPacket(Packet3AnalogueRead.HardwareToServer(packet.RequestID, packet.Pin, value));
+            this.SendPacket(new Packet3AnalogueRead(DestinationCode.ToServer, packet.RequestID, packet.Pin, value));
         }
 
         public override void OnProcessPacketToServer(Packet3AnalogueRead packet) {

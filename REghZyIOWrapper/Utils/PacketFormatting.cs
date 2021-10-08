@@ -10,12 +10,16 @@ namespace REghZyIOWrapper.Utils {
         /// <param name="targLen">The length of the string to return</param>
         /// <exception cref="Exception">Thrown if the length of the given value is larger than the target length</exception>
         public static string StretchFront(string str, int targLen, char front) {
+            if (str == null) {
+                throw new NullReferenceException("Input string cannot be null");
+            }
+
             int actualLength = str.Length;
             if (actualLength == targLen) {
                 return str;
             }
             else if (actualLength > targLen) {
-                throw new Exception("String value's length was too big");
+                throw new Exception($"String value's length was too big in the string '{str}' (target len = {targLen}, actual len = {str.Length})");
             }
             else {
                 StringBuilder sb = new StringBuilder(targLen);
@@ -28,6 +32,10 @@ namespace REghZyIOWrapper.Utils {
         }
 
         public static string StretchEnd(string str, int targLen, char front) {
+            if (str == null) {
+                throw new NullReferenceException("Input string cannot be null");
+            }
+
             int actualLength = str.Length;
             if (actualLength == targLen) {
                 return str;

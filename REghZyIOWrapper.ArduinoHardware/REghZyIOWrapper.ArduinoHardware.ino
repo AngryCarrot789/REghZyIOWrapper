@@ -1,35 +1,32 @@
 #include "CharBuffer.h"
 #include "StringBuilder.h"
-
 CharBuffer* buffer;
 
-StringBuilder errBuffer = StringBuilder(256);
-
 void processNewLine();
-void sendPacketFailed();
+void sendPacketFailed(const char* msg);
 
 void processPacket00(int meta);
 void processPacket01(int meta);
 void processPacket02(int meta);
 void processPacket03(int meta);
 
-void sendPacket(int id, int meta, StringBuilder& dataAutoDeleted);
-void sendMessage(StringBuilder& msg);
+void sendPacket(int id, int meta, const char* data);
+void sendMessage(const char* msg);
 
 void setup() {
 	buffer = new CharBuffer(128);
 	Serial.begin(9600);
-	pinMode(3, HIGH);
-	pinMode(4, HIGH);
-	pinMode(5, HIGH);
-	pinMode(6, HIGH);
-	pinMode(7, HIGH);
-	pinMode(8, HIGH);
-	pinMode(9, HIGH);
-	pinMode(10, HIGH);
-	pinMode(11, HIGH);
-	pinMode(12, HIGH);
-	pinMode(13, HIGH);
+	pinMode(3, OUTPUT);
+	pinMode(4, OUTPUT);
+	pinMode(5, OUTPUT);
+	pinMode(6, OUTPUT);
+	pinMode(7, OUTPUT);
+	pinMode(8, OUTPUT);
+	pinMode(9, OUTPUT);
+	pinMode(10, OUTPUT);
+	pinMode(11, OUTPUT);
+	pinMode(12, OUTPUT);
+	pinMode(13, OUTPUT);
 }
 
 void loop() {
@@ -49,25 +46,21 @@ void loop() {
 }
 
 void processNewLine() {
-	errBuffer.clear();
 	int readable = buffer->readable();
 	if (readable < 4) {
-		errBuffer.appendString("Readable chars < 4");
-		sendPacketFailed();
+		sendPacketFailed("Readable chars < 4");
 		return;
 	}
 
 	int id = buffer->readint(2);
 	if (id < 0 || id > 99) {
-		errBuffer.appendString("ID Out of Range (it was ").appendInt(id).appendChar(')');
-		sendPacketFailed();
+		sendPacketFailed(StringBuilder(32).appendString("ID Out of Range (it was ").appendInt(id).appendChar(')').toString());
 		return;
 	}
 
 	int meta = buffer->readint(2);
 	if (meta < 0 || meta > 99) {
-		errBuffer.appendString("Meta Out of Range (it was ").appendInt(id).appendChar(')');
-		sendPacketFailed();
+		sendPacketFailed(StringBuilder(34).appendString("Meta Out of Range (it was ").appendInt(meta).appendChar(')').toString());
 		return;
 	}
 
@@ -108,18 +101,15 @@ void processPacket00(int meta) {
 				str.deleteBuffer();
 			}
 			else {
-				errBuffer.appendString("Code != 1");
-				sendPacketFailed();
+				sendPacketFailed("Code != 1");
 			}
 		}
 		else {
-			errBuffer.appendString("2nd dot = bad");
-			sendPacketFailed();
+			sendPacketFailed("2nd dot = bad");
 		}
 	}
 	else {
-		errBuffer.appendString("1st dot = bad");
-		sendPacketFailed();
+		sendPacketFailed("1st dot = bad");
 	}
 }
 
@@ -127,15 +117,14 @@ void processPacket01(int meta) {
 	char c = buffer->readChar();
 	if (c == 'H') {
 		digitalWrite(meta, HIGH);
-		sendMessage(StringBuilder(20).appendString("Pin ").appendInt(meta).appendString(" set to HIGH"));
+		sendMessage(StringBuilder(20).appendString("Pin ").appendInt(meta).appendString(" set to HIGH").toString());
 	}
 	else if (c == 'L') {
 		digitalWrite(meta, LOW);
-		sendMessage(StringBuilder(20).appendString("Pin ").appendInt(meta).appendString(" set to LOW"));
+		sendMessage(StringBuilder(20).appendString("Pin ").appendInt(meta).appendString(" set to LOW").toString());
 	}
 	else {
-		errBuffer.appendString("The char '").appendChar(c).appendString("' was unknown! Pin = ").appendInt(meta);
-		sendPacketFailed();
+		sendPacketFailed(StringBuilder(48).appendString("The char '").appendChar(c).appendString("' was unknown! Pin = ").appendInt(meta).toString());
 	}
 }
 
@@ -143,15 +132,14 @@ void processPacket02(int meta) { }
 void processPacket03(int meta) { }
 
 // Autodeletes the given string buffer for you
-void sendPacketFailed() {
+void sendPacketFailed(const char* errMsg) {
 	Serial.println();
 	Serial.print("0900");
-	Serial.println(errBuffer.appendString(". Index = ").appendInt(buffer->getReadIndex()).toString());
-	errBuffer.clear();
+	Serial.println(StringBuilder(StringBuilder::stringlen(errMsg) + 14).appendString(errMsg).appendString(". Index = ").appendInt(buffer->getReadIndex()).toString());
 }
 
-void sendPacket(int id, int meta, StringBuilder& dataAutoDeleted) {
-	StringBuilder sb = StringBuilder(dataAutoDeleted.getSize() + 4);
+void sendPacket(int id, int meta, const char* data) {
+	StringBuilder sb = StringBuilder(StringBuilder::stringlen(data) + 4);
 	if (id > 9) {
 		sb.appendInt(id);
 	}
@@ -165,11 +153,10 @@ void sendPacket(int id, int meta, StringBuilder& dataAutoDeleted) {
 		sb.appendString("0").appendInt(meta);
 	}
 
-	sb.appendString(dataAutoDeleted);
+	sb.appendString(data);
 	Serial.println(sb.toString());
-	dataAutoDeleted.deleteBuffer();
 }
 
-void sendMessage(StringBuilder& msg) {
+void sendMessage(const char* msg) {
 	sendPacket(8, 0, msg);
 }

@@ -11,8 +11,6 @@ namespace REghZyIOWrapper.Arduino.Packets {
         }
 
         static Packet8Chat() {
-            // technically, you wouldn't need a packet creator for this packet,
-            // because you only need to send the packet to the arduino, not receive it back
             RegisterPacket(8, (meta, msg) => {
                 return new Packet8Chat(msg);
             });
