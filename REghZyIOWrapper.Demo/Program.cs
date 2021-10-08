@@ -12,8 +12,10 @@ namespace REghZyIOWrapper.Demo {
     class Program {
         static void Main(string[] args) {
             Packet.RunPacketCtor<Packet>();
+            // Locate all of the packet classes
             foreach (Type type in Packet.FindPacketImplementations()) {
                 Console.WriteLine($"Found packet implementation '{type.Name}'");
+                // Force thr CLR to run their static constructor (which registers the packet)
                 Packet.RunPacketCtor(type);
             }
 
@@ -21,6 +23,7 @@ namespace REghZyIOWrapper.Demo {
             string port = Console.ReadLine();
             try {
                 ArduinoDevice device = new ArduinoDevice(port);
+                // Register a few packet listeners
                 device.PacketSystem.RegisterListener(new GenericPacketListener<Packet8Chat>((packet) => {
                     Console.WriteLine("Incoming Chat: " + packet.Message);
                 }));
@@ -35,13 +38,12 @@ namespace REghZyIOWrapper.Demo {
 
                 Console.Write("e");
                 device.DigitalWrite(13, true);
+                Thread.Sleep(1000);
                 device.DigitalWrite(12, true);
+                Thread.Sleep(1000);
                 device.DigitalWrite(11, true);
+                Thread.Sleep(1000);
                 device.DigitalWrite(13, false);
-                device.DigitalWrite(10, true);
-                device.DigitalWrite(12, false);
-                device.DigitalWrite(11, false);
-                device.DigitalWrite(10, false);
                 Console.Write("e");
             }
             catch (Exception exc) {

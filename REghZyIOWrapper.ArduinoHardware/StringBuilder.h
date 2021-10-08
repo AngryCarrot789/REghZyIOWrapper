@@ -2,7 +2,7 @@
 #define __STRING_BUILDER
 
 #define BUFFER_RESIZE_SUCCESS 1
-#define BUFFER_RESIZE_UNCHANCED 0
+#define BUFFER_RESIZE_UNCHANCED 1
 #define BUFFER_RESIZE_ERR -1
 
 #include <stdlib.h>
