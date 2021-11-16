@@ -1,8 +1,8 @@
 # REghZyIOWrapper
 Flexible, packet based, communication. Only serial ports are supported. might use this for arduino communication
 
-UPDATE: i made a faster, and also more efficient version of this: https://github.com/AngryCarrot789/REghZyIOWrapperV2
-
+## UPDATE: i made a faster, and also more efficient version of this
+### https://github.com/AngryCarrot789/REghZyIOWrapperV2
 That new version writes the raw bytes of data (similar to minecraft's packeting system), rather than using formatted strings like this repo
 
 heres a demo :)
